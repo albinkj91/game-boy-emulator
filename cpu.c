@@ -30,7 +30,10 @@ void set_flag(_Bool value, u_byte flag_bit_position);
 int main(){
 	init_registers();
 	execute_opcode(0x05);
-	printf("Register F = %x\n", reg.f);
+	
+	// TODO: When implementing loop make sure PC is incremented after reading OP code
+	// otherwise program will break.
+
 	return 1;
 }
 
@@ -63,17 +66,23 @@ void execute_opcode(u_byte opcode){
 			bc++;
 			reg.b = (bc & 0xff00) >> 8;
 			reg.c = bc & 0x00ff;
+			reg.pc++;
 			break;
 		case 0x04:
 			reg.f &= 0x10;
 			set_flag(((reg.b & 0x0f) == 0x0f) && ++reg.b, H_BIT);
 			set_flag(!reg.b, Z_BIT);
+			reg.pc++;
 			break;
 		case 0x05:
 			reg.f &= 0x10;
 			set_flag(!reg.b, Z_BIT);
 			set_flag(((reg.b & 0x0f) == 0x00) && reg.b, H_BIT);
 			reg.b--;
+			reg.pc++;
+			break;
+		case 0x06:
+			reg.b = get_memory_value(reg.pc++);
 			break;
 		case 0x4f:
 			reg.c = reg.a;
