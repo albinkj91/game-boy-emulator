@@ -29,8 +29,7 @@ void set_flag(_Bool value, u_byte flag_bit_position);
 
 int main(){
 	init_registers();
-	reg.b = 0xf;
-	execute_opcode(0x04);
+	execute_opcode(0x05);
 	printf("Register F = %x\n", reg.f);
 	return 1;
 }
@@ -69,7 +68,12 @@ void execute_opcode(u_byte opcode){
 			reg.f &= 0x10;
 			set_flag(((reg.b & 0x0f) == 0x0f) && ++reg.b, H_BIT);
 			set_flag(!reg.b, Z_BIT);
-			printf("Register B = %x\n", reg.b);
+			break;
+		case 0x05:
+			reg.f &= 0x10;
+			set_flag(!reg.b, Z_BIT);
+			set_flag(((reg.b & 0x0f) == 0x00) && reg.b, H_BIT);
+			reg.b--;
 			break;
 		case 0x4f:
 			reg.c = reg.a;
