@@ -26,10 +26,11 @@ Register reg;
 void init_registers();
 void execute_opcode(u_byte opcode);
 void set_flag(_Bool value, u_byte flag_bit_position);
+u_byte get_flag(u_byte flag_bit_position);
 
 int main(){
 	init_registers();
-	execute_opcode(0x05);
+	execute_opcode(0x08);
 	
 	// TODO: When implementing loop make sure PC is incremented after reading OP code
 	// otherwise program will break.
@@ -70,19 +71,32 @@ void execute_opcode(u_byte opcode){
 			break;
 		case 0x04:
 			reg.f &= 0x10;
-			set_flag(((reg.b & 0x0f) == 0x0f) && ++reg.b, H_BIT);
-			set_flag(!reg.b, Z_BIT);
+			set_flag(((reg.b & 0x0f) == 0x0f) && ++reg.b, H_FLAG);
+			set_flag(!reg.b, Z_FLAG);
 			reg.pc++;
 			break;
 		case 0x05:
 			reg.f &= 0x10;
-			set_flag(!reg.b, Z_BIT);
-			set_flag(((reg.b & 0x0f) == 0x00) && reg.b, H_BIT);
+			set_flag(!reg.b, Z_FLAG);
+			set_flag(((reg.b & 0x0f) == 0x00) && reg.b, H_FLAG);
 			reg.b--;
 			reg.pc++;
 			break;
 		case 0x06:
 			reg.b = get_memory_value(reg.pc++);
+			break;
+		case 0x07:
+			reg.f &= 0x00;
+			set_flag(reg.a & 0x80, C_FLAG);
+			reg.a = (reg.a << 1) | get_flag(C_FLAG);
+			reg.pc++;
+			break;
+		case 0x08:;
+			u_byte lower = get_memory_value(reg.pc++);
+			u_byte higher = get_memory_value(reg.pc++);
+			u_short address = (higher << 8) | lower;
+			set_memory_value(address++, reg.sp & 0x00ff);
+			set_memory_value(address, reg.sp >> 8);
 			break;
 		case 0x4f:
 			reg.c = reg.a;
@@ -100,7 +114,9 @@ void set_flag(_Bool value, u_byte flag_bit_position){
 	reg.f |= value << flag_bit_position;
 }
 
-
+u_byte get_flag(u_byte flag_bit_position){
+	return (reg.f << (7 - flag_bit_position)) >> 7;
+}
 
 
 
