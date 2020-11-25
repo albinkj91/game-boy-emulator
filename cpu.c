@@ -27,11 +27,13 @@ void init_registers();
 void execute_opcode(u_byte opcode);
 void set_flag(_Bool value, u_byte flag_bit_position);
 u_byte get_flag(u_byte flag_bit_position);
-void add_x9(u_byte *higher, u_byte *lower);
+void add_x9(u_byte higher, u_byte lower);
+void ld_xa_16(u_byte higher, u_byte lower);
 
 int main(){
 	init_registers();
-	
+	//execute_opcode(0x00);
+
 	// TODO: When implementing loop make sure PC is incremented after reading OP code
 	// otherwise program will break.
 
@@ -55,14 +57,15 @@ void execute_opcode(u_byte opcode){
 	u_byte lower;
 	u_byte higher;
 	u_short address;
+	u_short hl;
+
 	switch(opcode){
 		case 0x01:
 			reg.c = get_memory_value(reg.pc++);
-			reg.b = get_memory_value(reg.pc++);
+			reg.b = get_memory_value(reg.pc);
 			break;
 		case 0x02:;
 			set_memory_value((reg.b << 8) | reg.c, reg.a);
-			reg.pc++;
 			break;
 		case 0x03:;
 			u_short bc = reg.b << 8;
@@ -70,68 +73,79 @@ void execute_opcode(u_byte opcode){
 			bc++;
 			reg.b = (bc & 0xff00) >> 8;
 			reg.c = bc & 0x00ff;
-			reg.pc++;
 			break;
 		case 0x04:
 			reg.f &= 0x10;
 			set_flag((reg.b & 0x0f) == 0x0f, H_FLAG);
 			set_flag(!++reg.b, Z_FLAG);
-			reg.pc++;
 			break;
 		case 0x05:
 			reg.f &= 0x10;
 			set_flag(!reg.b, Z_FLAG);
 			set_flag(((reg.b & 0x0f) == 0x00) && reg.b, H_FLAG);
 			reg.b--;
-			reg.pc++;
 			break;
 		case 0x06:
-			reg.b = get_memory_value(reg.pc++);
+			reg.b = get_memory_value(reg.pc);
 			break;
 		case 0x07:
 			reg.f &= 0x00;
 			set_flag(reg.a & 0x80, C_FLAG);
 			reg.a = (reg.a << 1) | get_flag(C_FLAG);
-			reg.pc++;
 			break;
 		case 0x08:;
 			lower = get_memory_value(reg.pc++);
-			higher = get_memory_value(reg.pc++);
+			higher = get_memory_value(reg.pc);
 			address = (higher << 8) | lower;
 			set_memory_value(address++, reg.sp & 0x00ff);
 			set_memory_value(address, reg.sp >> 8);
 			break;
 		case 0x09:
-			add_x9(&reg.b, &reg.c);
-			reg.pc++;
+			add_x9(reg.b, reg.c);
+			break;
+		case 0x0a:
+			ld_xa_16(reg.b, reg.c);
+			break;
+		case 0x1a:
+			ld_xa_16(reg.d, reg.e);
+			break;
+		case 0x2a:
+			ld_xa_16(reg.h, reg.l);
+			hl = ((reg.h << 8) | reg.l) + 1;
+			reg.h = hl >> 8;
+			reg.l = hl & 0x00ff;
+			break;
+		case 0x3a:
+			ld_xa_16(reg.h, reg.l);
+			hl = ((reg.h << 8) | reg.l) - 1;
+			reg.h = hl >> 8;
+			reg.l = hl & 0x00ff;
 			break;
 		case 0x19:
-			add_x9(&reg.d, &reg.e);
-			reg.pc++;
+			add_x9(reg.d, reg.e);
 			break;
 		case 0x29:
-			add_x9(&reg.h, &reg.l);
-			reg.pc++;
+			add_x9(reg.h, reg.l);
 			break;
 		case 0x39:;
 			lower = reg.sp & 0x00ff;
 			higher = reg.sp >> 8; 
-			add_x9(&higher, &lower);
-			reg.pc++;
+			add_x9(higher, lower);
 			break;
 		case 0x4f:
 			reg.c = reg.a;
-			reg.pc++;
 			break;
 		default:
 			printf("Default case\n");
 			reg.pc++;
 			break;
 	}
+	reg.pc++;
 }
 
 
 void set_flag(_Bool value, u_byte flag_bit_position){
+	// To improve: Set mask instead 0x10, 0x20, 0x40, 0x80
 	reg.f |= value << flag_bit_position;
 }
 
@@ -139,17 +153,20 @@ u_byte get_flag(u_byte flag_bit_position){
 	return (reg.f << (7 - flag_bit_position)) >> 7;
 }
 
-void add_x9(u_byte *higher, u_byte *lower){
+void add_x9(u_byte higher, u_byte lower){
 	reg.f &= 0x80;
 	u_short hl = (reg.h << 8) | reg.l;
-	u_short nn = (*higher << 8) | *lower;
+	u_short nn = (higher << 8) | lower;
 	set_flag((hl + nn) > 0xffff, C_FLAG);
 	set_flag(((hl & 0x0fff) + (nn & 0x0fff)) > 0xfff, H_FLAG);
-	reg.h += *higher;
-	reg.l += *lower;
+	reg.h += higher;
+	reg.l += lower;
 }
 
-
+void ld_xa_16(u_byte higher, u_byte lower){
+	u_short address = (higher << 8) | lower;
+	reg.a = get_memory_value(address);
+}
 
 
 
