@@ -27,12 +27,15 @@ void init_registers();
 void execute_opcode(u_byte opcode);
 void set_flag(_Bool value, u_byte flag_bit_position);
 u_byte get_flag(u_byte flag_bit_position);
+void add_x9(u_byte *higher, u_byte *lower);
 
 int main(){
 	init_registers();
-	reg.b = 0x0f;
-	execute_opcode(0x04);
-	printf("Register F = %x\n", reg.f);
+	reg.h = 0x8a;
+	reg.l = 0x23;
+	reg.b = 0x8a;
+	reg.c = 0x23;
+	execute_opcode(0x09);
 	
 	// TODO: When implementing loop make sure PC is incremented after reading OP code
 	// otherwise program will break.
@@ -100,6 +103,9 @@ void execute_opcode(u_byte opcode){
 			set_memory_value(address++, reg.sp & 0x00ff);
 			set_memory_value(address, reg.sp >> 8);
 			break;
+		case 0x09:
+			add_x9(&reg.b, &reg.c);
+			break;
 		case 0x4f:
 			reg.c = reg.a;
 			reg.pc++;
@@ -120,7 +126,18 @@ u_byte get_flag(u_byte flag_bit_position){
 	return (reg.f << (7 - flag_bit_position)) >> 7;
 }
 
+void add_x9(u_byte *higher, u_byte *lower){
+	reg.f &= 0x80;
+	u_short hl = (reg.h << 8) | reg.l;
+	u_short nn = (*higher << 8) | *lower;
+	set_flag((hl + nn) > 0xffff, C_FLAG);
+	set_flag(((hl & 0x0fff) + (nn & 0x0fff)) > 0xfff, H_FLAG);
+	*higher += reg.h;
+	*lower += reg.l;
 
+	printf("Register F = %x\n", reg.f);
+	printf("Sum result = %x%x\n", reg.b, reg.c);
+}
 
 
 
