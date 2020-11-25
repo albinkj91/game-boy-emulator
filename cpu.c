@@ -31,11 +31,6 @@ void add_x9(u_byte *higher, u_byte *lower);
 
 int main(){
 	init_registers();
-	reg.h = 0x8a;
-	reg.l = 0x23;
-	reg.b = 0x8a;
-	reg.c = 0x23;
-	execute_opcode(0x09);
 	
 	// TODO: When implementing loop make sure PC is incremented after reading OP code
 	// otherwise program will break.
@@ -57,6 +52,9 @@ void init_registers(){
 }
 
 void execute_opcode(u_byte opcode){
+	u_byte lower;
+	u_byte higher;
+	u_short address;
 	switch(opcode){
 		case 0x01:
 			reg.c = get_memory_value(reg.pc++);
@@ -97,14 +95,29 @@ void execute_opcode(u_byte opcode){
 			reg.pc++;
 			break;
 		case 0x08:;
-			u_byte lower = get_memory_value(reg.pc++);
-			u_byte higher = get_memory_value(reg.pc++);
-			u_short address = (higher << 8) | lower;
+			lower = get_memory_value(reg.pc++);
+			higher = get_memory_value(reg.pc++);
+			address = (higher << 8) | lower;
 			set_memory_value(address++, reg.sp & 0x00ff);
 			set_memory_value(address, reg.sp >> 8);
 			break;
 		case 0x09:
 			add_x9(&reg.b, &reg.c);
+			reg.pc++;
+			break;
+		case 0x19:
+			add_x9(&reg.d, &reg.e);
+			reg.pc++;
+			break;
+		case 0x29:
+			add_x9(&reg.h, &reg.l);
+			reg.pc++;
+			break;
+		case 0x39:;
+			lower = reg.sp & 0x00ff;
+			higher = reg.sp >> 8; 
+			add_x9(&higher, &lower);
+			reg.pc++;
 			break;
 		case 0x4f:
 			reg.c = reg.a;
@@ -132,11 +145,8 @@ void add_x9(u_byte *higher, u_byte *lower){
 	u_short nn = (*higher << 8) | *lower;
 	set_flag((hl + nn) > 0xffff, C_FLAG);
 	set_flag(((hl & 0x0fff) + (nn & 0x0fff)) > 0xfff, H_FLAG);
-	*higher += reg.h;
-	*lower += reg.l;
-
-	printf("Register F = %x\n", reg.f);
-	printf("Sum result = %x%x\n", reg.b, reg.c);
+	reg.h += *higher;
+	reg.l += *lower;
 }
 
 
