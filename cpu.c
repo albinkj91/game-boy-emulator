@@ -4,7 +4,6 @@
 #include "cpu.h"
 #include "memory.h"
 
-// Variable definitions
 typedef struct Registers{
 	u_byte a;
 	u_byte f;
@@ -22,17 +21,21 @@ typedef struct Registers{
 Register reg;
 
 
-// Function definitions
 void init_registers();
 void execute_opcode(u_byte opcode);
 void set_flag(_Bool value, u_byte flag_bit_position);
 u_byte get_flag(u_byte flag_bit_position);
 void add_x9(u_byte higher, u_byte lower);
 void ld_xa_16(u_byte higher, u_byte lower);
+void dec_xb_16(u_byte *higher, u_byte *lower);
+void inc_8(u_byte *reg_pointer);
 
 int main(){
 	init_registers();
-	//execute_opcode(0x00);
+	reg.b = 0x0f;
+	execute_opcode(0x04);
+	printf("Register B = %x\n", reg.b);
+	printf("Register F = %x\n", reg.f);
 
 	// TODO: When implementing loop make sure PC is incremented after reading OP code
 	// otherwise program will break.
@@ -75,9 +78,7 @@ void execute_opcode(u_byte opcode){
 			reg.c = bc & 0x00ff;
 			break;
 		case 0x04:
-			reg.f &= 0x10;
-			set_flag((reg.b & 0x0f) == 0x0f, H_FLAG);
-			set_flag(!++reg.b, Z_FLAG);
+			inc_8(&reg.b);
 			break;
 		case 0x05:
 			reg.f &= 0x10;
@@ -106,6 +107,24 @@ void execute_opcode(u_byte opcode){
 		case 0x0a:
 			ld_xa_16(reg.b, reg.c);
 			break;
+		case 0x0b:
+			dec_xb_16(&reg.b, &reg.c);
+			break;
+		case 0x0c:
+			inc_8(&reg.c);
+			break;
+		case 0x1b:
+			dec_xb_16(&reg.d, &reg.e);
+			break;
+		case 0x2b:
+			dec_xb_16(&reg.h, &reg.l);
+			break;
+		case 0x3b:
+			higher = (reg.sp & 0xff00) >> 8;
+			lower = reg.sp & 0x00ff;
+			dec_xb_16(&higher, &lower);
+			reg.sp = (higher << 8) | lower;
+			break;
 		case 0x1a:
 			ld_xa_16(reg.d, reg.e);
 			break;
@@ -120,6 +139,21 @@ void execute_opcode(u_byte opcode){
 			hl = ((reg.h << 8) | reg.l) - 1;
 			reg.h = hl >> 8;
 			reg.l = hl & 0x00ff;
+			break;
+		case 0x1c:
+			inc_8(&reg.e);
+			break;
+		case 0x14:
+			inc_8(&reg.d);
+			break;
+		case 0x24:
+			inc_8(&reg.h);
+			break;
+		case 0x2c:
+			inc_8(&reg.l);
+			break;
+		case 0x3c:
+			inc_8(&reg.a);
 			break;
 		case 0x19:
 			add_x9(reg.d, reg.e);
@@ -145,7 +179,6 @@ void execute_opcode(u_byte opcode){
 
 
 void set_flag(_Bool value, u_byte flag_bit_position){
-	// To improve: Set mask instead 0x10, 0x20, 0x40, 0x80
 	reg.f |= value << flag_bit_position;
 }
 
@@ -168,5 +201,14 @@ void ld_xa_16(u_byte higher, u_byte lower){
 	reg.a = get_memory_value(address);
 }
 
+void dec_xb_16(u_byte *higher, u_byte *lower){
+	u_short hl = ((*higher << 8) | *lower) - 1;
+	*higher = (hl & 0xff00) >> 8;
+	*lower = hl & 0x00ff;
+}
 
-
+void inc_8(u_byte *reg_pointer){
+	reg.f &= 0x10;
+	set_flag((*reg_pointer & 0x0f) == 0x0f, H_FLAG);
+	set_flag(!++*reg_pointer, Z_FLAG);
+}
