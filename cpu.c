@@ -23,8 +23,8 @@ Register reg;
 
 void init_registers();
 void execute_opcode(u_byte opcode);
-void set_flag(_Bool value, u_byte flag_bit_position);
-u_byte get_flag(u_byte flag_bit_position);
+void set_flag(_Bool value, u_byte flag_mask);
+u_byte get_flag(u_byte flag_mask);
 void add_x9(u_byte higher, u_byte lower);
 void ld_8_immediate(u_byte *reg_pointer);
 void ld_xa_16(u_byte higher, u_byte lower);
@@ -32,14 +32,17 @@ void dec_16(u_byte *higher, u_byte *lower);
 void inc_8(u_byte *reg_pointer);
 void inc_16(u_byte *higher, u_byte *lower);
 void dec_8(u_byte *reg_pointer);
+void jr_conditional(_Bool flag, s_byte steps);
 
 
 int main(){
 	init_registers();
-	reg.b = 0x00;
-	reg.c = 0xff;
-	execute_opcode(0x03);
-	printf("Register BC = %x%x\n", reg.b, reg.c);
+
+	reg.f = 0x10;
+	set_memory_value(0x101, 0x05);
+	execute_opcode(0x38);
+	printf("Program Counter = %x\n", reg.pc);
+	printf("Register F = %x\n", reg.f);
 
 	return 1;
 }
@@ -63,6 +66,8 @@ void execute_opcode(u_byte opcode){
 	u_short address;
 	u_short hl;
 	u_byte mem_value;
+	u_byte flag;
+	s_byte steps;
 
 	switch(opcode){
 		case 0x01:
@@ -115,6 +120,9 @@ void execute_opcode(u_byte opcode){
 		case 0x0e:
 			ld_8_immediate(&reg.c);
 			break;
+		case 0x10:
+			//TODO: STOP
+			break;
 		case 0x11:
 			reg.e = get_memory_value(reg.pc++);
 			reg.d = get_memory_value(reg.pc);
@@ -135,6 +143,10 @@ void execute_opcode(u_byte opcode){
 		case 0x16:
 			ld_8_immediate(&reg.d);
 			break;
+		case 0x18:
+			steps = get_memory_value(reg.pc + 1);
+			reg.pc += steps - 1;
+			break;
 		case 0x19:
 			add_x9(reg.d, reg.e);
 			break;
@@ -152,6 +164,11 @@ void execute_opcode(u_byte opcode){
 			break;
 		case 0x1e:
 			ld_8_immediate(&reg.e);
+			break;
+		case 0x20:
+			flag = !get_flag(Z_FLAG);
+			steps = get_memory_value(reg.pc + 1);
+			jr_conditional(flag, steps);
 			break;
 		case 0x21:
 			reg.l = get_memory_value(reg.pc++);
@@ -174,6 +191,11 @@ void execute_opcode(u_byte opcode){
 		case 0x26:
 			ld_8_immediate(&reg.h);
 			break;
+		case 0x28:
+			flag = get_flag(Z_FLAG);
+			steps = get_memory_value(reg.pc + 1);
+			jr_conditional(flag, steps);
+			break;
 		case 0x29:
 			add_x9(reg.h, reg.l);
 			break;
@@ -192,6 +214,11 @@ void execute_opcode(u_byte opcode){
 			break;
 		case 0x2e:
 			ld_8_immediate(&reg.l);
+			break;
+		case 0x30:
+			flag = !get_flag(C_FLAG);
+			steps = get_memory_value(reg.pc + 1);
+			jr_conditional(flag, steps);
 			break;
 		case 0x31:
 			lower = get_memory_value(reg.pc++);
@@ -217,6 +244,11 @@ void execute_opcode(u_byte opcode){
 			address = (reg.h << 8) | reg.l;
 			mem_value = get_memory_value(++reg.pc);
 			set_memory_value(address, mem_value);
+			break;
+		case 0x38:
+			flag = get_flag(C_FLAG);
+			steps = get_memory_value(reg.pc + 1);
+			jr_conditional(flag, steps);
 			break;
 		case 0x39:;
 			lower = reg.sp & 0x00ff;
@@ -255,12 +287,14 @@ void execute_opcode(u_byte opcode){
 }
 
 
-void set_flag(_Bool value, u_byte flag_bit_position){
-	reg.f |= value << flag_bit_position;
+void set_flag(_Bool value, u_byte flag_mask){
+	if(value){
+		reg.f |= flag_mask;
+	}
 }
 
-u_byte get_flag(u_byte flag_bit_position){
-	return (reg.f << (7 - flag_bit_position)) >> 7;
+u_byte get_flag(u_byte flag_mask){
+	return reg.f & flag_mask;
 }
 
 void add_x9(u_byte higher, u_byte lower){
@@ -305,4 +339,10 @@ void dec_8(u_byte *reg_pointer){
 	reg.f &= 0x10;
 	set_flag(((*reg_pointer & 0x0f) == 0x00) && *reg_pointer, H_FLAG);
 	set_flag(!--*reg_pointer, Z_FLAG);
+}
+
+void jr_conditional(_Bool flag, s_byte steps){
+	if(flag){
+		reg.pc += steps - 1;
+	}
 }
