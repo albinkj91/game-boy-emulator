@@ -33,15 +33,17 @@ void inc_8(u_byte *reg_pointer);
 void inc_16(u_byte *higher, u_byte *lower);
 void dec_8(u_byte *reg_pointer);
 void jr_conditional(_Bool flag, s_byte steps);
+void daa();
 
 
 int main(){
 	init_registers();
 
-	reg.f = 0x10;
-	set_memory_value(0x101, 0x05);
-	execute_opcode(0x38);
-	printf("Program Counter = %x\n", reg.pc);
+	set_memory_value(0x1100, 0xf);
+	reg.h = 0x11;
+	reg.l = 0x00;
+	execute_opcode(0x34);
+	printf("Memory value 0x1100 = %x\n", get_memory_value(0x1100));
 	printf("Register F = %x\n", reg.f);
 
 	return 1;
@@ -143,6 +145,11 @@ void execute_opcode(u_byte opcode){
 		case 0x16:
 			ld_8_immediate(&reg.d);
 			break;
+		case 0x17:
+			reg.f &= 0x00;
+			set_flag(reg.a & 0x80, C_FLAG);
+			reg.a = (reg.a << 1) | get_flag(C_FLAG);
+			break;
 		case 0x18:
 			steps = get_memory_value(reg.pc + 1);
 			reg.pc += steps - 1;
@@ -233,8 +240,13 @@ void execute_opcode(u_byte opcode){
 		case 0x33:
 			reg.sp++;
 			break;
+		case 0x34:
+			address = (reg.h << 8) | reg.l;
+			mem_value = get_memory_value(address);
+			inc_8(&mem_value);
+			set_memory_value(address, mem_value);
+			break;
 		case 0x35:
-			reg.f &= 0x10;
 			address = (reg.h << 8) | reg.l;
 			mem_value = get_memory_value(address);
 			dec_8(&mem_value);
@@ -344,5 +356,15 @@ void dec_8(u_byte *reg_pointer){
 void jr_conditional(_Bool flag, s_byte steps){
 	if(flag){
 		reg.pc += steps - 1;
+	}
+}
+
+void daa(){
+	reg.f &= 0xd; 
+	lower = reg.a & 0x0f;
+	higher = reg.a >> 4;
+
+	if(get_flag(N_FLAG)){
+		//TODO
 	}
 }
