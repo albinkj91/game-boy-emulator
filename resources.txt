@@ -1,3 +1,0 @@
-https://www.pastraiser.com/cpu/gameboy/gameboy_opcodes.html
-https://gbdev.io/pandocs/#memory-map
-https://www.manualslib.com/manual/1627081/Nintendo-Game-Boy.html?page=95#manual
