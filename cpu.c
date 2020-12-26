@@ -37,15 +37,9 @@ void daa();
 
 
 int main(){
+	//TODO: SUB and then test DAA instruction
 	init_registers();
-
-	set_memory_value(0x1100, 0xf);
-	reg.h = 0x11;
-	reg.l = 0x00;
 	execute_opcode(0x34);
-	printf("Memory value 0x1100 = %x\n", get_memory_value(0x1100));
-	printf("Register F = %x\n", reg.f);
-
 	return 1;
 }
 
@@ -360,11 +354,35 @@ void jr_conditional(_Bool flag, s_byte steps){
 }
 
 void daa(){
-	reg.f &= 0xd; 
-	lower = reg.a & 0x0f;
-	higher = reg.a >> 4;
+	u_byte lower = reg.a & 0x0f;
+	u_byte higher = reg.a >> 4;
 
-	if(get_flag(N_FLAG)){
-		//TODO
+	if(!get_flag(N_FLAG)){ // ADD
+		if(get_flag(C_FLAG)){
+			if(!get_flag(H_FLAG) && lower < 0xa){
+				reg.a += 0x60;
+			}else{
+				reg.a += 0x66;
+			}
+		}else{
+			if(!get_flag(H_FLAG)){
+				if(higher < 0x9 && lower > 0x9){
+					reg.a += 0x06;
+				}else if(higher > 0x9 && lower < 0xa){
+					reg.a += 0x60;
+				}else if(higher > 0x8 && lower > 0x9){
+					reg.a += 0x66;
+				}
+			}
+			else if(get_flag(H_FLAG) && higher < 0xa){
+				reg.a += 0x06;
+			}else{
+				reg.a += 0x66;
+				set_flag(1, C_FLAG);
+			}
+		}
+	}else{ // SUB
+		//TODO	
 	}
+	reg.f &= 0xd; 
 }
