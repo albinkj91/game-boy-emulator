@@ -39,7 +39,7 @@ void daa();
 int main(){
 	//TODO: SUB and then test DAA instruction
 	init_registers();
-	execute_opcode(0x34);
+	execute_opcode(0x27);
 	return 1;
 }
 
@@ -286,7 +286,7 @@ void execute_opcode(u_byte opcode){
 			reg.c = reg.a;
 			break;
 		default:
-			printf("Default case\n");
+			printf("OP Code not recognized.\n");
 			break;
 	}
 	reg.pc++;
