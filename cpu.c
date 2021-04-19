@@ -27,6 +27,7 @@ void set_flag(_Bool value, u_byte flag_mask);
 u_byte get_flag(u_byte flag_mask);
 void add_8(u_byte value);
 void add_x9(u_byte higher, u_byte lower);
+void adc(u_byte value);
 void ld_8_immediate(u_byte *reg_pointer);
 void ld_xa_16(u_byte higher, u_byte lower);
 void dec_16(u_byte *higher, u_byte *lower);
@@ -39,10 +40,10 @@ void daa();
 
 int main(){
 	init_registers();
-	reg.a = 0x45;
-	reg.b = 0x38;
-	execute_opcode(0x80);
-	execute_opcode(0x27);
+	reg.f = 0x80;
+	execute_opcode(0x3f);
+	//printf("REG A = %x\n", reg.a);
+	printf("REG F = %x\n", reg.f);
 	return 1;
 }
 
@@ -67,6 +68,7 @@ void execute_opcode(u_byte opcode){
 	u_byte mem_value;
 	u_byte flag;
 	s_byte steps;
+	u_byte temp_flag;
 
 	switch(opcode){
 		case 0x0:
@@ -99,7 +101,7 @@ void execute_opcode(u_byte opcode){
 			reg.pc += 2;
 			break;
 		case 0x07:
-			reg.f &= 0x00;
+			reg.f &= 0x0;
 			set_flag(reg.a & 0x80, C_FLAG);
 			reg.a = (reg.a << 1) | get_flag(C_FLAG);
 			reg.pc++;
@@ -136,6 +138,12 @@ void execute_opcode(u_byte opcode){
 			ld_8_immediate(&reg.c);
 			reg.pc += 2;
 			break;
+		case 0x0f:
+			reg.f &= 0x0;
+			set_flag(reg.a & 0x1, C_FLAG);
+			reg.a = (reg.a >> 1) | (get_flag(C_FLAG) << 3);
+			reg.pc++;
+			break;
 		case 0x10:
 			//TODO: STOP
 			printf("0x10 STOP, not implemented yet\n");
@@ -167,9 +175,10 @@ void execute_opcode(u_byte opcode){
 			reg.pc += 2;
 			break;
 		case 0x17:
-			reg.f &= 0x00;
+			reg.f &= 0x10;
+			temp_flag = reg.f;
 			set_flag(reg.a & 0x80, C_FLAG);
-			reg.a = (reg.a << 1) | get_flag(C_FLAG);
+			reg.a = (reg.a << 1) | (temp_flag >> 4);
 			reg.pc++;
 			break;
 		case 0x18:
@@ -200,6 +209,12 @@ void execute_opcode(u_byte opcode){
 			ld_8_immediate(&reg.e);
 			reg.pc += 2;
 			break;
+		case 0x1f:
+			reg.f &= 0x10;
+			temp_flag = reg.f;
+			set_flag(reg.a & 0x1, C_FLAG);
+			reg.a = (reg.a >> 1) | (temp_flag >> 4);
+			reg.pc++;
 		case 0x20:
 			flag = !get_flag(Z_FLAG);
 			steps = get_memory_value(reg.pc + 1);
@@ -266,6 +281,11 @@ void execute_opcode(u_byte opcode){
 			ld_8_immediate(&reg.l);
 			reg.pc += 2;
 			break;
+		case 0x2f:
+			reg.a = ~reg.a;
+			set_flag(1, H_FLAG);
+			set_flag(1, N_FLAG);
+			break;
 		case 0x30:
 			flag = !get_flag(C_FLAG);
 			steps = get_memory_value(reg.pc + 1);
@@ -307,6 +327,9 @@ void execute_opcode(u_byte opcode){
 			set_memory_value(address, mem_value);
 			reg.pc += 2;
 			break;
+		case 0x37:
+			reg.f |= 0x90;
+			break;
 		case 0x38:
 			flag = get_flag(C_FLAG);
 			steps = get_memory_value(reg.pc + 1);
@@ -344,14 +367,346 @@ void execute_opcode(u_byte opcode){
 			ld_8_immediate(&reg.a);
 			reg.pc += 2;
 			break;
+		case 0x3f:
+			reg.f &= 0x90;
+			reg.f ^= 0x10;
+			break;
+		case 0x40:
+			reg.b = reg.b;
+			reg.pc++;
+			break;
+		case 0x41:
+			reg.b = reg.c;
+			reg.pc++;
+			break;
+		case 0x42:
+			reg.b = reg.d;
+			reg.pc++;
+			break;
+		case 0x43:
+			reg.b = reg.e;
+			reg.pc++;
+			break;
+		case 0x44:
+			reg.b = reg.h;
+			reg.pc++;
+			break;
+		case 0x45:
+			reg.b = reg.l;
+			reg.pc++;
+			break;
+		case 0x46:
+			address = (reg.h << 8) | reg.l;
+			reg.b = get_memory_value(address);
+			reg.pc++;
+			break;
+		case 0x47:
+			reg.b = reg.a;
+			reg.pc++;
+			break;
+		case 0x48:
+			reg.c = reg.b;
+			reg.pc++;
+			break;
+		case 0x49:
+			reg.c = reg.c;
+			reg.pc++;
+			break;
+		case 0x4a:
+			reg.c = reg.d;
+			reg.pc++;
+			break;
+		case 0x4b:
+			reg.c = reg.e;
+			reg.pc++;
+			break;
+		case 0x4c:
+			reg.c = reg.h;
+			reg.pc++;
+			break;
+		case 0x4d:
+			reg.c = reg.l;
+			reg.pc++;
+			break;
+		case 0x4e:
+			address = (reg.h << 8) | reg.l;
+			reg.c = get_memory_value(address);
+			reg.pc++;
+			break;
 		case 0x4f:
 			reg.c = reg.a;
 			reg.pc++;
 			break;
+		case 0x50:
+			reg.d = reg.b;
+			reg.pc++;
+			break;
+		case 0x51:
+			reg.d = reg.c;
+			reg.pc++;
+			break;
+		case 0x52:
+			reg.d = reg.d;
+			reg.pc++;
+			break;
+		case 0x53:
+			reg.d = reg.e;
+			reg.pc++;
+			break;
+		case 0x54:
+			reg.d = reg.h;
+			reg.pc++;
+			break;
+		case 0x55:
+			reg.d = reg.l;
+			reg.pc++;
+			break;
+		case 0x56:
+			address = (reg.h << 8) | reg.l;
+			reg.d = get_memory_value(address);
+			reg.pc++;
+			break;
+		case 0x57:
+			reg.d = reg.a;
+			reg.pc++;
+			break;
+		case 0x58:
+			reg.e = reg.b;
+			reg.pc++;
+			break;
+		case 0x59:
+			reg.e = reg.c;
+			reg.pc++;
+			break;
+		case 0x5a:
+			reg.e = reg.d;
+			reg.pc++;
+			break;
+		case 0x5b:
+			reg.e = reg.e;
+			reg.pc++;
+			break;
+		case 0x5c:
+			reg.e = reg.h;
+			reg.pc++;
+			break;
+		case 0x5d:
+			reg.e = reg.l;
+			reg.pc++;
+			break;
+		case 0x5e:
+			address = (reg.h << 8) | reg.l;
+			reg.e = get_memory_value(address);
+			reg.pc++;
+			break;
+		case 0x5f:
+			reg.e = reg.a;
+			reg.pc++;
+			break;
+		case 0x60:
+			reg.h = reg.b;
+			reg.pc++;
+			break;
+		case 0x61:
+			reg.h = reg.c;
+			reg.pc++;
+			break;
+		case 0x62:
+			reg.h = reg.d;
+			reg.pc++;
+			break;
+		case 0x63:
+			reg.h = reg.e;
+			reg.pc++;
+			break;
+		case 0x64:
+			reg.h = reg.h;
+			reg.pc++;
+			break;
+		case 0x65:
+			reg.h = reg.l;
+			reg.pc++;
+			break;
+		case 0x66:
+			address = (reg.h << 8) | reg.l;
+			reg.h = get_memory_value(address);
+			reg.pc++;
+			break;
+		case 0x67:
+			reg.h = reg.a;
+			reg.pc++;
+			break;
+		case 0x68:
+			reg.l = reg.b;
+			reg.pc++;
+			break;
+		case 0x69:
+			reg.l = reg.c;
+			reg.pc++;
+			break;
+		case 0x6a:
+			reg.l = reg.d;
+			reg.pc++;
+			break;
+		case 0x6b:
+			reg.l = reg.e;
+			reg.pc++;
+			break;
+		case 0x6c:
+			reg.l = reg.h;
+			reg.pc++;
+			break;
+		case 0x6d:
+			reg.l = reg.l;
+			reg.pc++;
+			break;
+		case 0x6e:
+			address = (reg.h << 8) | reg.l;
+			reg.l = get_memory_value(address);
+			reg.pc++;
+			break;
+		case 0x6f:
+			reg.l = reg.a;
+			reg.pc++;
+			break;
+		case 0x70:
+			address = (reg.h << 8) | reg.l;
+			set_memory_value(address, reg.b);
+			reg.pc++;
+			break;
+		case 0x71:
+			address = (reg.h << 8) | reg.l;
+			set_memory_value(address, reg.c);
+			reg.pc++;
+			break;
+		case 0x72:
+			address = (reg.h << 8) | reg.l;
+			set_memory_value(address, reg.d);
+			reg.pc++;
+			break;
+		case 0x73:
+			address = (reg.h << 8) | reg.l;
+			set_memory_value(address, reg.e);
+			reg.pc++;
+			break;
+		case 0x74:
+			address = (reg.h << 8) | reg.l;
+			set_memory_value(address, reg.h);
+			reg.pc++;
+			break;
+		case 0x75:
+			address = (reg.h << 8) | reg.l;
+			set_memory_value(address, reg.l);
+			reg.pc++;
+			break;
+		case 0x76:
+			//TODO: HALT
+			break;
+		case 0x77:
+			address = (reg.h << 8) | reg.l;
+			set_memory_value(address, reg.a);
+			reg.pc++;
+			break;
+		case 0x78:
+			reg.a = reg.b;
+			reg.pc++;
+			break;
+		case 0x79:
+			reg.a = reg.c;
+			reg.pc++;
+			break;
+		case 0x7a:
+			reg.a = reg.d;
+			reg.pc++;
+			break;
+		case 0x7b:
+			reg.a = reg.e;
+			reg.pc++;
+			break;
+		case 0x7c:
+			reg.a = reg.h;
+			reg.pc++;
+			break;
+		case 0x7d:
+			reg.a = reg.l;
+			reg.pc++;
+			break;
+		case 0x7e:
+			address = (reg.h << 8) | reg.l;
+			reg.a = get_memory_value(address);
+			reg.pc++;
+			break;
+		case 0x7f:
+			reg.a = reg.a;
+			reg.pc++;
+			break;
 		case 0x80:
-			lower = get_memory_value(reg.pc + 1);
-			add_8(lower);
-			reg.pc += 2;
+			add_8(reg.b);
+			reg.pc++;
+			break;
+		case 0x81:
+			add_8(reg.c);
+			reg.pc++;
+			break;
+		case 0x82:
+			add_8(reg.d);
+			reg.pc++;
+			break;
+		case 0x83:
+			add_8(reg.e);
+			reg.pc++;
+			break;
+		case 0x84:
+			add_8(reg.h);
+			reg.pc++;
+			break;
+		case 0x85:
+			add_8(reg.l);
+			reg.pc++;
+			break;
+		case 0x86:
+			address = (reg.h << 8) | reg.l;
+			mem_value = get_memory_value(address);
+			add_8(mem_value);
+			reg.pc++;
+			break;
+		case 0x87:
+			add_8(reg.a);
+			reg.pc++;
+			break;
+		case 0x88:
+			adc(reg.b);
+			reg.pc++;
+			break;
+		case 0x89:
+			adc(reg.c);
+			reg.pc++;
+			break;
+		case 0x8a:
+			adc(reg.d);
+			reg.pc++;
+			break;
+		case 0x8b:
+			adc(reg.e);
+			reg.pc++;
+			break;
+		case 0x8c:
+			adc(reg.h);
+			reg.pc++;
+			break;
+		case 0x8d:
+			adc(reg.l);
+			reg.pc++;
+			break;
+		case 0x8e:
+			address = (reg.h << 8) | reg.l;
+			mem_value = get_memory_value(address);
+			adc(mem_value);
+			reg.pc++;
+			break;
+		case 0x8f:
+			adc(reg.a);
+			reg.pc++;
 			break;
 		default:
 			printf("OP Code not recognized.\n");
@@ -375,7 +730,7 @@ void add_x9(u_byte higher, u_byte lower){
 	u_short hl = (reg.h << 8) | reg.l;
 	u_short nn = (higher << 8) | lower;
 	set_flag((hl + nn) > 0xffff, C_FLAG);
-	set_flag(((hl & 0x0fff) + (nn & 0x0fff)) > 0xfff, H_FLAG);
+	set_flag(((hl & 0xfff) + (nn & 0xfff)) > 0xfff, H_FLAG);
 	reg.h += higher;
 	reg.l += lower;
 }
@@ -383,12 +738,21 @@ void add_x9(u_byte higher, u_byte lower){
 void add_8(u_byte value){
 	reg.f &= 0x0;
 	u_byte lower = value & 0xf;
-	u_byte higher = (value & 0xf0) >> 4;
 	u_byte a_lower = reg.a & 0xf;
-	u_byte a_higher = (reg.a & 0xf0) >> 4;
 	set_flag((reg.a + value) > 0xff, C_FLAG);
 	set_flag((lower + a_lower) > 0xf, H_FLAG);
 	reg.a += value;
+	set_flag(reg.a == 0, Z_FLAG);
+}
+
+void adc(u_byte value){
+	_Bool c_flag = get_flag(C_FLAG);
+	reg.f &= 0x0;
+	u_byte lower = value & 0xf;
+	u_byte a_lower = reg.a & 0xf;
+	set_flag((reg.a + value + c_flag) > 0xff, C_FLAG);
+	set_flag((lower + a_lower + c_flag) > 0xf, H_FLAG);
+	reg.a += value + c_flag;
 	set_flag(reg.a == 0, Z_FLAG);
 }
 
@@ -422,7 +786,7 @@ void inc_16(u_byte *higher, u_byte *lower){
 
 void dec_8(u_byte *reg_pointer){
 	reg.f &= 0x10;
-	set_flag(((*reg_pointer & 0x0f) == 0x00) && *reg_pointer, H_FLAG);
+	set_flag(((*reg_pointer & 0x0f) == 0x0) && *reg_pointer, H_FLAG);
 	set_flag(!--*reg_pointer, Z_FLAG);
 }
 
