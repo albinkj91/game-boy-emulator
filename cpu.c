@@ -30,6 +30,10 @@ void add_x9(u_byte higher, u_byte lower);
 void adc(u_byte value);
 void sub_8(u_byte value);
 void sbc(u_byte value);
+void and(u_byte value);
+void xor(u_byte value);
+void or(u_byte value);
+void cp(u_byte value);
 void ld_8_immediate(u_byte *reg_pointer);
 void ld_xa_16(u_byte higher, u_byte lower);
 void dec_16(u_byte *higher, u_byte *lower);
@@ -42,7 +46,9 @@ void daa();
 
 int main(){
 	init_registers();
-	execute_opcode(0x98);
+	reg.a = 0x0;
+	reg.b = 0x0;
+	execute_opcode(0xa8);
 	printf("REG A = %x\n", reg.a);
 	printf("REG F = %x\n", reg.f);
 	return 1;
@@ -777,6 +783,74 @@ void execute_opcode(u_byte opcode){
 			sbc(reg.a);
 			reg.pc++;
 			break;
+		case 0xa0:
+			and(reg.b);
+			reg.pc++;
+			break;
+		case 0xa1:
+			and(reg.c);
+			reg.pc++;
+			break;
+		case 0xa2:
+			and(reg.d);
+			reg.pc++;
+			break;
+		case 0xa3:
+			and(reg.e);
+			reg.pc++;
+			break;
+		case 0xa4:
+			and(reg.h);
+			reg.pc++;
+			break;
+		case 0xa5:
+			and(reg.l);
+			reg.pc++;
+			break;
+		case 0xa6:
+			address = (reg.h << 8) | reg.l;
+			mem_value = get_memory_value(address);
+			and(mem_value);
+			reg.pc++;
+			break;
+		case 0xa7:
+			and(reg.a);
+			reg.pc++;
+			break;
+		case 0xa8:
+			xor(reg.b);
+			reg.pc++;
+			break;
+		case 0xa9:
+			xor(reg.c);
+			reg.pc++;
+			break;
+		case 0xaa:
+			xor(reg.d);
+			reg.pc++;
+			break;
+		case 0xab:
+			xor(reg.e);
+			reg.pc++;
+			break;
+		case 0xac:
+			xor(reg.h);
+			reg.pc++;
+			break;
+		case 0xad:
+			xor(reg.l);
+			reg.pc++;
+			break;
+		case 0xae:
+			address = (reg.h << 8) | reg.l;
+			mem_value = get_memory_value(address);
+			xor(mem_value);
+			reg.pc++;
+			break;
+		case 0xaf:
+			xor(reg.a);
+			reg.pc++;
+			break;
 		default:
 			printf("OP Code not recognized.\n");
 			break;
@@ -848,6 +922,23 @@ void sbc(u_byte value){
 	reg.a -= c_flag;
 	set_flag(reg.a == 0, Z_FLAG);
 }
+
+void and(u_byte value){
+	reg.f &= 0x0;
+	reg.f |= 0x20;
+	reg.a &= value;
+	set_flag(reg.a == 0, Z_FLAG);
+}
+
+void xor(u_byte value){
+	reg.f &= 0x0;
+	reg.a ^= value;
+	set_flag(reg.a == 0, Z_FLAG);
+}
+
+void or(u_byte value){}
+
+void cp(u_byte value){}
 
 void ld_xa_16(u_byte higher, u_byte lower){
 	u_short address = (higher << 8) | lower;
