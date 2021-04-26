@@ -28,6 +28,8 @@ u_byte get_flag(u_byte flag_mask);
 void add_8(u_byte value);
 void add_x9(u_byte higher, u_byte lower);
 void adc(u_byte value);
+void sub_8(u_byte value);
+void sbc(u_byte value);
 void ld_8_immediate(u_byte *reg_pointer);
 void ld_xa_16(u_byte higher, u_byte lower);
 void dec_16(u_byte *higher, u_byte *lower);
@@ -40,9 +42,8 @@ void daa();
 
 int main(){
 	init_registers();
-	reg.f = 0x80;
-	execute_opcode(0x3f);
-	//printf("REG A = %x\n", reg.a);
+	execute_opcode(0x98);
+	printf("REG A = %x\n", reg.a);
 	printf("REG F = %x\n", reg.f);
 	return 1;
 }
@@ -708,6 +709,74 @@ void execute_opcode(u_byte opcode){
 			adc(reg.a);
 			reg.pc++;
 			break;
+		case 0x90:
+			sub_8(reg.b);
+			reg.pc++;
+			break;
+		case 0x91:
+			sub_8(reg.c);
+			reg.pc++;
+			break;
+		case 0x92:
+			sub_8(reg.d);
+			reg.pc++;
+			break;
+		case 0x93:
+			sub_8(reg.e);
+			reg.pc++;
+			break;
+		case 0x94:
+			sub_8(reg.h);
+			reg.pc++;
+			break;
+		case 0x95:
+			sub_8(reg.l);
+			reg.pc++;
+			break;
+		case 0x96:
+			address = (reg.h << 8) | reg.l;
+			mem_value = get_memory_value(address);
+			sub_8(mem_value);
+			reg.pc++;
+			break;
+		case 0x97:
+			sub_8(reg.a);
+			reg.pc++;
+			break;
+		case 0x98:
+			sbc(reg.b);
+			reg.pc++;
+			break;
+		case 0x99:
+			sbc(reg.c);
+			reg.pc++;
+			break;
+		case 0x9a:
+			sbc(reg.d);
+			reg.pc++;
+			break;
+		case 0x9b:
+			sbc(reg.e);
+			reg.pc++;
+			break;
+		case 0x9c:
+			sbc(reg.h);
+			reg.pc++;
+			break;
+		case 0x9d:
+			sbc(reg.l);
+			reg.pc++;
+			break;
+		case 0x9e:
+			address = (reg.h << 8) | reg.l;
+			mem_value = get_memory_value(address);
+			sbc(mem_value);
+			reg.pc++;
+			break;
+		case 0x9f:
+			sbc(reg.a);
+			reg.pc++;
+			break;
 		default:
 			printf("OP Code not recognized.\n");
 			break;
@@ -740,7 +809,7 @@ void add_8(u_byte value){
 	u_byte lower = value & 0xf;
 	u_byte a_lower = reg.a & 0xf;
 	set_flag((reg.a + value) > 0xff, C_FLAG);
-	set_flag((lower + a_lower) > 0xf, H_FLAG);
+	set_flag((a_lower + lower) > 0xf, H_FLAG);
 	reg.a += value;
 	set_flag(reg.a == 0, Z_FLAG);
 }
@@ -751,8 +820,32 @@ void adc(u_byte value){
 	u_byte lower = value & 0xf;
 	u_byte a_lower = reg.a & 0xf;
 	set_flag((reg.a + value + c_flag) > 0xff, C_FLAG);
-	set_flag((lower + a_lower + c_flag) > 0xf, H_FLAG);
+	set_flag((a_lower + lower + c_flag) > 0xf, H_FLAG);
 	reg.a += value + c_flag;
+	set_flag(reg.a == 0, Z_FLAG);
+}
+
+void sub_8(u_byte value){
+	reg.f &= 0x0;
+	reg.f |= 0x40;
+	u_byte lower = value & 0xf;
+	u_byte a_lower = reg.a & 0xf;
+	set_flag((reg.a - value) < 0x0, C_FLAG);
+	set_flag((a_lower - lower) < 0x0, H_FLAG);
+	reg.a -= value;
+	set_flag(reg.a == 0, Z_FLAG);
+}
+
+void sbc(u_byte value){
+	_Bool c_flag = get_flag(C_FLAG);
+	reg.f &= 0x0;
+	reg.f |= 0x40;
+	u_byte lower = value & 0xf;
+	u_byte a_lower = reg.a & 0xf;
+	set_flag((reg.a - value - c_flag) < 0x0, C_FLAG);
+	set_flag((a_lower - lower - c_flag) < 0x0, H_FLAG);
+	reg.a -= value;
+	reg.a -= c_flag;
 	set_flag(reg.a == 0, Z_FLAG);
 }
 
@@ -840,5 +933,4 @@ void daa(){
 			set_flag(1, C_FLAG);
 		}
 	}
-	reg.f &= 0xd; 
 }
