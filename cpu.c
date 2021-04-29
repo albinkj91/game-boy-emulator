@@ -46,9 +46,9 @@ void daa();
 
 int main(){
 	init_registers();
-	reg.a = 0x0;
-	reg.b = 0x0;
-	execute_opcode(0xa8);
+	reg.a = 0xf0;
+	reg.b = 0xf1;
+	execute_opcode(0xb8);
 	printf("REG A = %x\n", reg.a);
 	printf("REG F = %x\n", reg.f);
 	return 1;
@@ -851,6 +851,74 @@ void execute_opcode(u_byte opcode){
 			xor(reg.a);
 			reg.pc++;
 			break;
+		case 0xb0:
+			or(reg.b);
+			reg.pc++;
+			break;
+		case 0xb1:
+			or(reg.c);
+			reg.pc++;
+			break;
+		case 0xb2:
+			or(reg.d);
+			reg.pc++;
+			break;
+		case 0xb3:
+			or(reg.e);
+			reg.pc++;
+			break;
+		case 0xb4:
+			or(reg.h);
+			reg.pc++;
+			break;
+		case 0xb5:
+			or(reg.l);
+			reg.pc++;
+			break;
+		case 0xb6:
+			address = (reg.h << 8) | reg.l;
+			mem_value = get_memory_value(address);
+			or(mem_value);
+			reg.pc++;
+			break;
+		case 0xb7:
+			or(reg.a);
+			reg.pc++;
+			break;
+		case 0xb8:
+			cp(reg.b);
+			reg.pc++;
+			break;
+		case 0xb9:
+			cp(reg.c);
+			reg.pc++;
+			break;
+		case 0xba:
+			cp(reg.d);
+			reg.pc++;
+			break;
+		case 0xbb:
+			cp(reg.e);
+			reg.pc++;
+			break;
+		case 0xbc:
+			cp(reg.h);
+			reg.pc++;
+			break;
+		case 0xbd:
+			cp(reg.l);
+			reg.pc++;
+			break;
+		case 0xbe:
+			address = (reg.h << 8) | reg.l;
+			mem_value = get_memory_value(address);
+			cp(mem_value);
+			reg.pc++;
+			break;
+		case 0xbf:
+			cp(reg.a);
+			reg.pc++;
+			break;
 		default:
 			printf("OP Code not recognized.\n");
 			break;
@@ -936,9 +1004,21 @@ void xor(u_byte value){
 	set_flag(reg.a == 0, Z_FLAG);
 }
 
-void or(u_byte value){}
+void or(u_byte value){
+	reg.f &= 0x0;
+	reg.a |= value;
+	set_flag(reg.a == 0, Z_FLAG);
+}
 
-void cp(u_byte value){}
+void cp(u_byte value){
+	reg.f &= 0x0;
+	reg.f |= 0x40;
+	u_byte lower = value & 0xf;
+	u_byte a_lower = reg.a & 0xf;
+	set_flag(value > reg.a, C_FLAG);
+	set_flag(lower > a_lower, H_FLAG);
+	set_flag(value == reg.a, Z_FLAG);
+}
 
 void ld_xa_16(u_byte higher, u_byte lower){
 	u_short address = (higher << 8) | lower;
