@@ -953,8 +953,43 @@ void execute_opcode(u_byte opcode){
 		case 0xd9:
 			reg.pc = pop_stack(&reg.sp);
 			break;
+		case 0xe0:
+			address = 0xff00 + get_memory_value(reg.pc + 1);
+			set_memory_value(address, reg.a);
+			reg.pc += 2;
+			break;
+		case 0xe2:
+			address = 0xff00 + reg.c;
+			set_memory_value(address, reg.a);
+			reg.pc++;
+			break;
+		case 0xea:
+			lower = get_memory_value(reg.pc + 1);
+			higher = get_memory_value(reg.pc + 2);
+			address = (higher << 8) | lower;
+			set_memory_value(address, reg.a);
+			reg.pc += 3;
+			break;
+		case 0xf0:
+			address = 0xff00 + get_memory_value(reg.pc + 1);
+			reg.a = get_memory_value(address);
+			reg.pc += 2;
+			break;
+		case 0xf2:
+			address = 0xff00 + reg.c;
+			reg.a = get_memory_value(address);
+			reg.pc++;
+			break;
+		case 0xfa:
+			lower = get_memory_value(reg.pc + 1);
+			higher = get_memory_value(reg.pc + 2);
+			address = (higher << 8) | lower;
+			reg.a = get_memory_value(address);
+			reg.pc += 3;
+			break;
 		default:
 			printf("ERROR::UNKNOWN_OPCODE: %x\n", opcode);
+			exit(0);
 			break;
 	}
 }
