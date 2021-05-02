@@ -919,8 +919,42 @@ void execute_opcode(u_byte opcode){
 			cp(reg.a);
 			reg.pc++;
 			break;
+		case 0xc0:
+			if(!get_flag(Z_FLAG)){
+				reg.pc = pop_stack(&reg.sp);
+			}else{
+				reg.pc++;
+			}
+			break;
+		case 0xc8:
+			if(get_flag(Z_FLAG)){
+				reg.pc = pop_stack(&reg.sp);
+			}else{
+				reg.pc++;
+			}
+			break;
+		case 0xc9:
+			reg.pc = pop_stack(&reg.sp);
+			break;
+		case 0xd0:
+			if(!get_flag(C_FLAG)){
+				reg.pc = pop_stack(&reg.sp);
+			}else{
+				reg.pc++;
+			}
+			break;
+		case 0xd8:
+			if(get_flag(C_FLAG)){
+				reg.pc = pop_stack(&reg.sp);
+			}else{
+				reg.pc++;
+			}
+			break;
+		case 0xd9:
+			reg.pc = pop_stack(&reg.sp);
+			break;
 		default:
-			printf("OP Code not recognized.\n");
+			printf("ERROR::UNKNOWN_OPCODE: %x\n", opcode);
 			break;
 	}
 }
