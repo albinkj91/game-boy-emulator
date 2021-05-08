@@ -14,16 +14,16 @@ void set_memory_value(u_short address, u_byte value){
 }
 
 void push_stack(u_short value, u_short *sp){
-	if(*sp > 0xfffe){
+	if(*sp < 0xff80){
 		printf("ERROR::SP_OUT_OF_BOUNDS\n");
 		exit(0);
 	}
-	memory[*sp++] = value;
-	memory[*sp++] = value >> 8;
+	memory[*sp--] = value;
+	memory[*sp--] = value >> 8;
 }
 
 u_short pop_stack(u_short *sp){
-	u_short value = memory[--*sp] << 8;
-	value |= memory[--*sp];
+	u_short value = memory[++*sp] << 8;
+	value |= memory[++*sp];
 	return value;
 }
