@@ -41,6 +41,7 @@ void inc_8(u_byte *reg_pointer);
 void inc_16(u_byte *higher, u_byte *lower);
 void dec_8(u_byte *reg_pointer);
 void jr_conditional(_Bool flag, s_byte steps);
+void jp_conditional(_Bool flag, u_short address);
 void daa();
 
 
@@ -63,7 +64,7 @@ void init_registers(){
 	reg.e = 0x0;
 	reg.h = 0x0;
 	reg.l = 0x0;
-	reg.sp = 0x0;
+	reg.sp = STACK_START_ADDRESS;
 	reg.pc = PC_START;
 }
 
@@ -926,6 +927,29 @@ void execute_opcode(u_byte opcode){
 				reg.pc++;
 			}
 			break;
+		case 0xc1:
+			hl = pop_stack(&reg.sp);
+			reg.b = hl >> 8;
+			reg.c = hl;
+			reg.pc++;
+			break;
+		case 0xc2:
+			higher = get_memory_value(reg.pc + 1);
+			lower = get_memory_value(reg.pc + 2);
+			address = (higher << 8) | lower;
+			jp_conditional(!get_flag(Z_FLAG), address);
+			break;
+		case 0xc3:
+			higher = get_memory_value(reg.pc + 1);
+			lower = get_memory_value(reg.pc + 2);
+			address = (higher << 8) | lower;
+			reg.pc = address;
+			break;
+		case 0xc5:
+			hl = (reg.b << 8) | reg.c;
+			push_stack(hl, &reg.sp);
+			reg.pc++;
+			break;
 		case 0xc8:
 			if(get_flag(Z_FLAG)){
 				reg.pc = pop_stack(&reg.sp);
@@ -936,12 +960,35 @@ void execute_opcode(u_byte opcode){
 		case 0xc9:
 			reg.pc = pop_stack(&reg.sp);
 			break;
+		case 0xca:
+			higher = get_memory_value(reg.pc + 1);
+			lower = get_memory_value(reg.pc + 2);
+			address = (higher << 8) | lower;
+			jp_conditional(get_flag(Z_FLAG), address);
+			break;
 		case 0xd0:
 			if(!get_flag(C_FLAG)){
 				reg.pc = pop_stack(&reg.sp);
 			}else{
 				reg.pc++;
 			}
+			break;
+		case 0xd1:
+			hl = pop_stack(&reg.sp);
+			reg.d = hl >> 8;
+			reg.e = hl;
+			reg.pc++;
+			break;
+		case 0xd2:
+			higher = get_memory_value(reg.pc + 1);
+			lower = get_memory_value(reg.pc + 2);
+			address = (higher << 8) | lower;
+			jp_conditional(!get_flag(C_FLAG), address);
+			break;
+		case 0xd5:
+			hl = (reg.d << 8) | reg.e;
+			push_stack(hl, &reg.sp);
+			reg.pc++;
 			break;
 		case 0xd8:
 			if(get_flag(C_FLAG)){
@@ -953,14 +1000,31 @@ void execute_opcode(u_byte opcode){
 		case 0xd9:
 			reg.pc = pop_stack(&reg.sp);
 			break;
+		case 0xda:
+			higher = get_memory_value(reg.pc + 1);
+			lower = get_memory_value(reg.pc + 2);
+			address = (higher << 8) | lower;
+			jp_conditional(get_flag(C_FLAG), address);
+			break;
 		case 0xe0:
 			address = 0xff00 + get_memory_value(reg.pc + 1);
 			set_memory_value(address, reg.a);
 			reg.pc += 2;
 			break;
+		case 0xe1:
+			hl = pop_stack(&reg.sp);
+			reg.h = hl >> 8;
+			reg.l = hl;
+			reg.pc++;
+			break;
 		case 0xe2:
 			address = 0xff00 + reg.c;
 			set_memory_value(address, reg.a);
+			reg.pc++;
+			break;
+		case 0xe5:
+			hl = (reg.h << 8) | reg.l;
+			push_stack(hl, &reg.sp);
 			reg.pc++;
 			break;
 		case 0xea:
@@ -975,9 +1039,20 @@ void execute_opcode(u_byte opcode){
 			reg.a = get_memory_value(address);
 			reg.pc += 2;
 			break;
+		case 0xf1:
+			hl = pop_stack(&reg.sp);
+			reg.a = hl >> 8;
+			reg.f = hl;
+			reg.pc++;
+			break;
 		case 0xf2:
 			address = 0xff00 + reg.c;
 			reg.a = get_memory_value(address);
+			reg.pc++;
+			break;
+		case 0xf5:
+			hl = (reg.a << 8) | reg.f;
+			push_stack(hl, &reg.sp);
 			reg.pc++;
 			break;
 		case 0xfa:
@@ -1128,6 +1203,14 @@ void jr_conditional(_Bool flag, s_byte steps){
 		reg.pc += steps;
 	}else{
 		reg.pc += 2;
+	}
+}
+
+void jp_conditional(_Bool flag, u_short address){
+	if(flag){
+		reg.pc = address;
+	}else{
+		reg.pc += 3;
 	}
 }
 
