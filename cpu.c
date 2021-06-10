@@ -19,7 +19,8 @@ typedef struct Registers{
 }Register;
 
 Register reg;
-
+_Bool running = 1;
+_Bool halted = 0;
 
 void init_registers();
 void execute_opcode(u_byte opcode);
@@ -46,13 +47,16 @@ void call_conditional(_Bool flag, u_short address, u_short destination);
 void daa();
 
 
-int main(){
+int main(int argc, char *argv[]){
+	printf("FILE: %s\n", argv[1]);
+	read_to_memory(argv[1]);
 	init_registers();
-	reg.a = 0xf0;
-	reg.b = 0xf1;
-	execute_opcode(0xb8);
-	printf("REG A = %x\n", reg.a);
-	printf("REG F = %x\n", reg.f);
+
+	while(running){
+		u_byte opcode = get_memory_value(reg.pc);
+		execute_opcode(opcode);
+		printf("OPCODE %x executed\n", opcode);
+	}
 	return 1;
 }
 
@@ -76,6 +80,7 @@ void execute_opcode(u_byte opcode){
 	u_short destination;
 	u_short hl;
 	u_byte mem_value;
+	u_byte sp_lower;
 	u_byte flag;
 	s_byte steps;
 	u_byte temp_flag;
@@ -157,6 +162,7 @@ void execute_opcode(u_byte opcode){
 		case 0x10:
 			//TODO: STOP
 			printf("0x10 STOP, not implemented yet\n");
+			running = 0;
 			break;
 		case 0x11:
 			reg.e = get_memory_value(reg.pc + 1);
@@ -611,6 +617,8 @@ void execute_opcode(u_byte opcode){
 			break;
 		case 0x76:
 			//TODO: HALT
+			halted = 1;
+			reg.pc++;
 			break;
 		case 0x77:
 			address = (reg.h << 8) | reg.l;
@@ -1053,6 +1061,7 @@ void execute_opcode(u_byte opcode){
 			}
 			break;
 		case 0xd9:
+			//TODO: Enable interrupts
 			reg.pc = pop_stack(&reg.sp);
 			break;
 		case 0xda:
@@ -1105,9 +1114,17 @@ void execute_opcode(u_byte opcode){
 		case 0xe7:
 			address = reg.pc + 1;
 			call_conditional(1, address, 0x20);
+		case 0xe8:
+			mem_value = get_memory_value(reg.pc + 1);
+			reg.f &= 0x0;
+			lower = mem_value & 0xf;
+			sp_lower = reg.sp & 0xf;
+			set_flag((reg.sp + mem_value) > 0xff, C_FLAG);
+			set_flag((sp_lower + lower) > 0xf, H_FLAG);
+			reg.sp += mem_value;
+			reg.pc += 2;
 		case 0xe9:
-			address = (reg.h << 8) | reg.l;
-			reg.pc = address;
+			reg.pc = (reg.h << 8) | reg.l;
 			break;
 		case 0xea:
 			lower = get_memory_value(reg.pc + 1);
@@ -1140,6 +1157,9 @@ void execute_opcode(u_byte opcode){
 			reg.a = get_memory_value(address);
 			reg.pc++;
 			break;
+		case 0xf3:
+			//TODO: Disable interrupts
+			break;
 		case 0xf5:
 			hl = (reg.a << 8) | reg.f;
 			push_stack(hl, &reg.sp);
@@ -1153,6 +1173,18 @@ void execute_opcode(u_byte opcode){
 		case 0xf7:
 			address = reg.pc + 1;
 			call_conditional(1, address, 0x30);
+		case 0xf8:
+			mem_value = get_memory_value(reg.pc + 1);
+			reg.f &= 0x0;
+			lower = mem_value & 0xf;
+			sp_lower = reg.sp & 0xf;
+			set_flag((reg.sp + mem_value) > 0xff, C_FLAG);
+			set_flag((sp_lower + lower) > 0xf, H_FLAG);
+			reg.sp += mem_value;
+			reg.h = reg.sp >> 8;
+			reg.l = reg.sp;
+			reg.pc += 2;
+			break;
 		case 0xf9:
 			hl = (reg.h << 8) | reg.l;
 			reg.sp = hl;
@@ -1163,6 +1195,9 @@ void execute_opcode(u_byte opcode){
 			address = (higher << 8) | lower;
 			reg.a = get_memory_value(address);
 			reg.pc += 3;
+			break;
+		case 0xfb:
+			//TODO: Enable interrupts
 			break;
 		case 0xfe:
 			mem_value = get_memory_value(reg.pc + 1);
