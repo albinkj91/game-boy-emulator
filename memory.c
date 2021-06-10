@@ -9,6 +9,16 @@ u_byte get_memory_value(u_short address){
 	return memory[address];
 }
 
+void read_to_memory(char *filepath){
+	FILE* fd = fopen(filepath, "r");
+
+	if(fd == NULL){
+		perror("Error opening file.\n");
+		exit(EXIT_FAILURE);
+	}
+	fread(memory, sizeof(memory), 1, fd);
+}
+
 void set_memory_value(u_short address, u_byte value){
 	memory[address] = value;
 }
