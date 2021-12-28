@@ -1,11 +1,11 @@
 #include "global.h"
 
-_Bool ime = false;
+_Bool ime = 0;
 
 void enable_interrupts(){
-	ime = true;
+	ime = 1;
 }
 
 void disable_interrupts(){
-	ime = false;
+	ime = 0;
 }
