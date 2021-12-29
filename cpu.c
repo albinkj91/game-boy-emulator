@@ -21,6 +21,7 @@ typedef struct Registers{
 Register reg;
 _Bool running = 1;
 _Bool halted = 0;
+_Bool ime = 0;
 
 void init_registers();
 void execute_opcode(u_byte opcode);
@@ -1158,7 +1159,8 @@ void execute_opcode(u_byte opcode){
 			reg.pc++;
 			break;
 		case 0xf3:
-			//TODO: Disable interrupts
+            ime = 0;
+            reg.pc++;
 			break;
 		case 0xf5:
 			hl = (reg.a << 8) | reg.f;
@@ -1197,7 +1199,8 @@ void execute_opcode(u_byte opcode){
 			reg.pc += 3;
 			break;
 		case 0xfb:
-			//TODO: Enable interrupts
+            ime = 1;
+            reg.pc++;
 			break;
 		case 0xfe:
 			mem_value = get_memory_value(reg.pc + 1);
